@@ -1,14 +1,14 @@
-let config = {
-    upToken: 'your-up-token-here',
-    discordToken: 'your-discord-bot-token-here',
-    channels: [
-        '737266422459138048'
+{
+    "upToken": "your-up-token-here",
+    "discordToken": "your-discord-token-here",
+    "channels": [
+        "737266422459138048"
     ],
-    authorizedUsers: [
-        '278805875978928128'
+    "authorizedUsers": [
+        "278805875978928128"
     ],
-    httpPort: 80,
-    allowedMerchants: [
+    "httpPort": 7643,
+    "allowedMerchants": [
         "ATM Cash Out",
 
         "McDonald's",
@@ -67,5 +67,3 @@ let config = {
         "Vodafone"
     ]
 }
-
-module.exports = config;
