@@ -76,6 +76,10 @@ class Discord extends EventEmitter {
                 let tx = await db.txForMessage(message.channel.id, message.id);
                 this.emit("processTxId", tx, "default");
                 this.discord.removeMessageReaction(message.channel.id, message.id, emoji.name, reactor.id);
+            } else if (emoji.name === "✅") {
+                let tx = await db.txForMessage(message.channel.id, message.id);
+                this.emit("processTxId", tx, "full");
+                this.discord.removeMessageReaction(message.channel.id, message.id, emoji.name, reactor.id);
             }
         } catch {
 
