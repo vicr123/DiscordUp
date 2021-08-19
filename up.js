@@ -111,9 +111,15 @@ class Up extends EventEmitter {
             if (data.attributes.status == "HELD") amount += " [PENDING]";
             
             if (!isWithdrawal) {
+                let description = data.attributes.description;
+
+                if (data.attributes.rawText.toLowerCase().startsWith("afterpay")) {
+                    description += " · via Afterpay";
+                }
+
                 fields.push({
                     "name": isTransfer ? "Who?" : "Where?",
-                    "value": data.attributes.description
+                    "value": description
                 });
             }
     
