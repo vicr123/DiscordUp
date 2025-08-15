@@ -3,7 +3,7 @@ import express from 'express';
 import config from './config.ts';
 import fetch from 'node-fetch';
 import {TransactionId, TransactionResource, UpCategoryResponse, UpTransactionIdResponse} from "./types.ts";
-import {EmbedOptions} from "eris";
+import type {EmbedOptions} from "eris";
 
 const upToken = config.value("upToken");
 

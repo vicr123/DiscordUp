@@ -1,4 +1,4 @@
-import Eris, {Client, EmbedOptions} from "eris";
+import Eris, {type Client, type EmbedOptions} from "eris";
 import config from "./config.ts";
 import db from "./db.ts";
 import {EventEmitter} from "events";
