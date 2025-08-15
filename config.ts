@@ -1,5 +1,5 @@
 import fs from 'fs';
-import {Configuration} from "./types.js";
+import {type Configuration} from "./types.js";
 
 class Config {
     cfg;
