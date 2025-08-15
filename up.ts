@@ -2,7 +2,7 @@ import {EventEmitter} from "events";
 import express from 'express';
 import config from './config.ts';
 import fetch from 'node-fetch';
-import {TransactionId, TransactionResource, UpCategoryResponse, UpTransactionIdResponse} from "./types.ts";
+import type {TransactionId, TransactionResource, UpCategoryResponse, UpTransactionIdResponse} from "./types.ts";
 import type {EmbedOptions} from "eris";
 
 const upToken = config.value("upToken");
