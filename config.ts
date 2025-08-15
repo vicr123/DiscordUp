@@ -1,4 +1,5 @@
 import fs from 'fs';
+import {Configuration} from "./types.js";
 
 class Config {
     cfg;
@@ -9,13 +10,15 @@ class Config {
         this.cfg = JSON.parse(configString);
     }
 
-    value(key: string) {
+    value<T extends keyof Configuration>(key: T): Configuration[T] {
         return this.cfg[key];
     }
 
-    pushArray(key: string, value: any) {
-        let array = this.cfg[key];
-        array.push(value);
+    pushArray<T extends keyof Configuration>(key: T, value: Configuration[T][0]) {
+        const array: Configuration[T] = this.cfg[key];
+        if (Array.isArray(array)) {
+            array.push(value);
+        }
         this.cfg[key] = array;
 
         this.save();

@@ -2,14 +2,31 @@ import {EventEmitter} from "events";
 import express from 'express';
 import config from './config.ts';
 import fetch from 'node-fetch';
-import type {TransactionId, TransactionResource, UpCategoryResponse, UpTransactionIdResponse} from "./types.ts";
+import type {
+    CardPurchaseMethodEnum,
+    TransactionId,
+    TransactionResource,
+    UpCategoryResponse,
+    UpTransactionIdResponse
+} from "./types.ts";
 import type {EmbedOptions} from "eris";
 
 const upToken = config.value("upToken");
 
+const CARD_ENTRY_METHODS = {
+    "BAR_CODE": "Barcode",
+    "CARD_DETAILS": "Card Details",
+    "CARD_ON_FILE": "Card on File",
+    "CARD_PIN": "Card PIN",
+    "OCR": "OCR",
+    "CONTACTLESS": "Contactless",
+    "ECOMMERCE": "eCommerce",
+    "MAGNETIC_STRIPE": "Magstripe"
+} as Record<CardPurchaseMethodEnum, string>;
+
 class Up extends EventEmitter {
     server;
-    categories: Record<string, {name: string, parent?: string}> = {};
+    categories: Record<string, { name: string, parent?: string }> = {};
     wlNextTx;
 
     constructor() {
@@ -34,11 +51,11 @@ class Up extends EventEmitter {
                 this.emit("clearTx", data.relationships.transaction.data.id);
             }
         });
-        
+
         this.server.listen(config.value("httpPort"), () => {
             console.log("Web server is ready!");
         });
-        
+
         void this.initialiseCategories();
     }
 
@@ -60,7 +77,7 @@ class Up extends EventEmitter {
 
         let data = json.data;
         for (let category of data) {
-            let catg: {name: string, parent?: string} = {
+            let catg: { name: string, parent?: string } = {
                 name: category.attributes.name,
             }
 
@@ -86,24 +103,24 @@ class Up extends EventEmitter {
         }
 
         let isRefund = data.attributes.amount["valueInBaseUnits"] > 0;
-    
+
         let fields = [];
-    
+
         //Make sure this isn't a transfer
         if (allowedType === "default") allowedType = this.isAllowedTransaction(data);
         if (allowedType === "no") return;
-        
+
         let isTransfer = data.attributes.message !== null;
         let isWithdrawal = data.attributes.description === "ATM Cash Out";
         let embedDescription = "Victor spent some money!";
         if (isTransfer) embedDescription = "Victor transferred some money!";
         if (isRefund) embedDescription = "Victor was issued a refund!";
         if (isWithdrawal) embedDescription = "Victor withdrew some money!";
-    
+
         let footer = null;
         if (allowedType === "full") {
             let amount = "";
-    
+
             if (data.attributes["foreignAmount"]) {
                 if (isRefund) {
                     amount = `-${data.attributes["foreignAmount"].value} ${data.attributes["foreignAmount"]["currencyCode"]} (that's -$${data.attributes.amount.value} AUD)`;
@@ -111,7 +128,7 @@ class Up extends EventEmitter {
                     amount = `${data.attributes["foreignAmount"].value.substr(1)} ${data.attributes["foreignAmount"]["currencyCode"]} (that's $${data.attributes.amount.value.substr(1)} AUD)`;
                     if (!isTransfer && data.attributes.status == "HELD") footer = {
                         "icon_url": "https://raw.githubusercontent.com/vicr123/contemporary-icons/master/status/16/dialog-information.svg",
-                        "text": "The AUD amount may change to reflect the FX rate at the time of settlement"            
+                        "text": "The AUD amount may change to reflect the FX rate at the time of settlement"
                     };
                 }
             } else {
@@ -123,7 +140,7 @@ class Up extends EventEmitter {
             }
 
             if (data.attributes.status == "HELD") amount += " [PENDING]";
-            
+
             if (!isWithdrawal) {
                 let description = data.attributes.description;
 
@@ -136,7 +153,7 @@ class Up extends EventEmitter {
                     "value": description
                 });
             }
-    
+
             fields.push({
                 "name": "How much?",
                 "value": amount
@@ -145,36 +162,48 @@ class Up extends EventEmitter {
             //Don't say anything
             return;
         }
-    
+
         if (data.relationships.category.data) {
             let catg = this.categories[data.relationships.category.data.id];
             let parentCatg;
-    
+
             if (catg.parent) {
                 parentCatg = this.categories[catg.parent];
             }
-    
+
             let field = {
                 "name": "Category",
                 "value": parentCatg ? `${parentCatg.name} > ${catg.name}` : catg.name
             }
-    
+
             fields.push(field);
         }
-    
+
+        if (data.attributes.cardPurchaseMethod) {
+            const method = CARD_ENTRY_METHODS[data.attributes.cardPurchaseMethod.method];
+            const card = config.value("cards")?.find(x => x.suffix == data.attributes.cardPurchaseMethod?.cardNumberSuffix);
+
+            let field = {
+                "name": "Entry Method",
+                "value": [card?.name, method].filter(x => !!x).join(" - ")
+            }
+
+            fields.push(field);
+        }
+
         let embedBody: EmbedOptions =
-        {
-            "title": "Oh no!",
-            "description": embedDescription,
-            "color": 16743012,
-            "author": {
-                "name": "Up",
-                "url": "https://up.com.au/",
-                "icon_url": "https://cdn.discordapp.com/emojis/629299043679600640.png?v=1"
-            },
-            "fields": fields
-        };
-    
+            {
+                "title": "Oh no!",
+                "description": embedDescription,
+                "color": 16743012,
+                "author": {
+                    "name": "Up",
+                    "url": "https://up.com.au/",
+                    "icon_url": "https://cdn.discordapp.com/emojis/629299043679600640.png?v=1"
+                },
+                "fields": fields
+            };
+
         if (footer) {
             embedBody.footer = footer;
         }
@@ -187,14 +216,14 @@ class Up extends EventEmitter {
         //oh no Victor made a purchase!
         const myHeaders = {
             "Authorization": `Bearer ${upToken}`
-        };       
-    
+        };
+
         const requestOptions = {
             method: 'GET',
             headers: myHeaders,
             redirect: 'follow'
         } as const;
-        
+
         let response = await fetch(`https://api.up.com.au/api/v1/transactions/${tx}`, requestOptions);
         let json = await response.json() as UpTransactionIdResponse;
         await this.processTxData(json.data, allowedType);

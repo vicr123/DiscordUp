@@ -160,3 +160,16 @@ export interface UpCategoryResponse {
 export interface UpTransactionIdResponse {
     data: TransactionResource
 }
+
+export interface Configuration {
+    upToken: string,
+    discordToken: string,
+    channels: string[],
+    authorizedUsers: string[],
+    httpPort: number,
+    allowedMerchants: string[],
+    cards: {
+        suffix: string,
+        name: string,
+    }[]
+}

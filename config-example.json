@@ -65,5 +65,15 @@
         "Patreon",
         "Lindt",
         "Vodafone"
+    ],
+    "cards": [
+      {
+        "suffix": "4444",
+        "name": "Spending"
+      },
+      {
+        "suffix": "1111",
+        "name": "Essentials"
+      }
     ]
 }
