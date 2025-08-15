@@ -1,6 +1,6 @@
 import {EventEmitter} from "events";
 import sqlite3 from "sqlite3";
-import {TransactionId} from "./types";
+import {TransactionId} from "./types.ts";
 
 interface TxTypesTable {
     txid: string,

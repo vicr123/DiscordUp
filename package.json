@@ -25,5 +25,6 @@
   "bugs": {
     "url": "https://github.com/vicr123/DiscordUp/issues"
   },
-  "homepage": "https://github.com/vicr123/DiscordUp#readme"
+  "homepage": "https://github.com/vicr123/DiscordUp#readme",
+  "type": "module"
 }

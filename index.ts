@@ -1,7 +1,7 @@
-import config from "./config";
-import up from "./up";
-import discord from "./discord";
-import db from "./db";
+import config from "./config.ts";
+import up from "./up.ts";
+import discord from "./discord.ts";
+import db from "./db.ts";
 
 async function clearTx(txId: string, clearType = true) {
     //Delete everything to do with this transaction

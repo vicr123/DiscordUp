@@ -1,6 +1,6 @@
 import Eris, {Client, EmbedOptions} from "eris";
-import config from "./config";
-import db from "./db";
+import config from "./config.ts";
+import db from "./db.ts";
 import {EventEmitter} from "events";
 
 class Discord extends EventEmitter {

@@ -1,9 +1,8 @@
 import {EventEmitter} from "events";
 import express from 'express';
-import config from './config';
+import config from './config.ts';
 import fetch from 'node-fetch';
-import db from './db';
-import {TransactionId, TransactionResource, UpCategoryResponse, UpTransactionIdResponse} from "./types";
+import {TransactionId, TransactionResource, UpCategoryResponse, UpTransactionIdResponse} from "./types.ts";
 import {EmbedOptions} from "eris";
 
 const upToken = config.value("upToken");
