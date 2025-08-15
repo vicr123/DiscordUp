@@ -1,6 +1,17 @@
-const { EventEmitter } = require("events");
-const e = require("express");
-const sqlite3 = require('sqlite3');
+import {EventEmitter} from "events";
+import sqlite3 from "sqlite3";
+import {TransactionId} from "./types";
+
+interface TxTypesTable {
+    txid: string,
+    type: string,
+}
+
+interface TransactionsTable {
+    txid: string,
+    channel: string,
+    message: string,
+}
 
 class Db extends EventEmitter {
     db;
@@ -12,9 +23,9 @@ class Db extends EventEmitter {
         this.db.run("CREATE TABLE IF NOT EXISTS transactions(txid TEXT, channel TEXT, message TEXT, PRIMARY KEY(txid, channel, message), UNIQUE(channel, message))");
     }
 
-    idsForTransaction(txId) {
+    idsForTransaction(txId: TransactionId): Promise<{channel: string, message: string}[]> {
         return new Promise((res, rej) => {
-            this.db.all("SELECT * FROM transactions WHERE txid=?", [txId], (err, rows) => {
+            this.db.all("SELECT * FROM transactions WHERE txid=?", [txId], (err, rows: TransactionsTable[]) => {
                 if (err) {
                     rej(err);
                     return;
@@ -32,13 +43,13 @@ class Db extends EventEmitter {
         });
     }
 
-    upsertTxType(txId, type) {
+    upsertTxType(txId: TransactionId, type: string) {
         this.db.run("INSERT INTO txTypes(txid, type) VALUES(?, ?) ON CONFLICT(txid) DO UPDATE SET type=? WHERE txid=?", [txId, type, type, txId]);
     }
 
-    txType(txId) {
+    txType(txId: TransactionId) {
         return new Promise((res, rej) => {
-            this.db.all("SELECT * FROM txTypes WHERE txid=?", [txId], (err, rows) => {
+            this.db.all("SELECT * FROM txTypes WHERE txid=?", [txId], (err, rows: TxTypesTable[]) => {
                 if (err) {
                     rej(err);
                     return;
@@ -54,13 +65,13 @@ class Db extends EventEmitter {
         });
     }
 
-    insertTransaction(txId, channel, message) {
+    insertTransaction(txId: TransactionId, channel: string, message: string) {
         this.db.run("INSERT INTO transactions(txid, channel, message) VALUES(?, ?, ?)", [txId, channel, message]);
     }
 
-    txForMessage(channel, message) {
+    txForMessage(channel: string, message: string) {
         return new Promise((res, rej) => {
-            this.db.all("SELECT * FROM transactions WHERE channel=? AND message=?", [channel, message], (err, rows) => {
+            this.db.all("SELECT * FROM transactions WHERE channel=? AND message=?", [channel, message], (err, rows: TransactionsTable[]) => {
                 if (err) {
                     rej(err);
                     return;
@@ -76,11 +87,10 @@ class Db extends EventEmitter {
         });
     }
 
-    clearTx(txId, clearType) {
+    clearTx(txId: TransactionId, clearType: boolean) {
         if (clearType) this.db.run("DELETE FROM txTypes WHERE txid=?", [txId]);
         this.db.run("DELETE FROM transactions WHERE txid=?", [txId]);
     }
 }
 
-let instance = new Db();
-module.exports = instance;
+export default new Db();

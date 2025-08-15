@@ -9,7 +9,10 @@
     "node-fetch": "^3.3.2",
     "sqlite3": "^5.1.7"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/node": "^24.2.1",
+    "@types/express": "^5.0.3"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

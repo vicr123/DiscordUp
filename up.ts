@@ -1,14 +1,16 @@
-const { EventEmitter } = require("events");
-const express = require('express');
-const config = require('./config');
-const fetch = require('node-fetch');
-const db = require('./db');
+import {EventEmitter} from "events";
+import express from 'express';
+import config from './config';
+import fetch from 'node-fetch';
+import db from './db';
+import {TransactionId, TransactionResource, UpCategoryResponse, UpTransactionIdResponse} from "./types";
+import {EmbedOptions} from "eris";
 
 const upToken = config.value("upToken");
 
 class Up extends EventEmitter {
     server;
-    categories;
+    categories: Record<string, {name: string, parent?: string}> = {};
     wlNextTx;
 
     constructor() {
@@ -19,34 +21,47 @@ class Up extends EventEmitter {
         this.server = express();
         this.server.use(express.json());
 
-        this.server.post("/webhookpayload", this.executeWebhook.bind(this));
+        this.server.post("/webhookpayload", (req, res) => {
+            res.send('OK!');
+
+            let data = req.body.data;
+
+            let attr = data.attributes;
+            if (attr.eventType == "TRANSACTION_CREATED") {
+                void this.processTxId(data.relationships.transaction.data.id);
+            } else if (attr.eventType == "TRANSACTION_SETTLED") {
+                void this.processTxId(data.relationships.transaction.data.id);
+            } else if (attr.eventType == "TRANSACTION_DELETED") {
+                this.emit("clearTx", data.relationships.transaction.data.id);
+            }
+        });
         
         this.server.listen(config.value("httpPort"), () => {
             console.log("Web server is ready!");
         });
         
-        this.initialiseCategories();
+        void this.initialiseCategories();
     }
 
     async initialiseCategories() {
         this.categories = {};
 
-        var myHeaders = {
+        const myHeaders = {
             "Authorization": `Bearer ${upToken}`
-        };       
+        };
 
-        var requestOptions = {
+        const requestOptions = {
             method: 'GET',
             headers: myHeaders,
             redirect: 'follow'
-        };
+        } as const;
 
         let response = await fetch(`https://api.up.com.au/api/v1/categories`, requestOptions)
-        let json = await response.json();
+        let json = await response.json() as UpCategoryResponse;
 
         let data = json.data;
         for (let category of data) {
-            let catg = {
+            let catg: {name: string, parent?: string} = {
                 name: category.attributes.name,
             }
 
@@ -58,13 +73,13 @@ class Up extends EventEmitter {
         }
     }
 
-    isAllowedTransaction(data) {
+    isAllowedTransaction(data: TransactionResource) {
         if (data.attributes.description.startsWith("Cover ") || data.attributes.description.startsWith("Forward ") || data.attributes.description.startsWith("Transfer ") || data.attributes.description.startsWith("Auto Transfer ")) return "no";
         if (config.value("allowedMerchants").includes(data.attributes.description)) return "full";
         return "minimal";
     }
 
-    async processTxData(data, allowedType) {
+    async processTxData(data: TransactionResource, allowedType: string) {
         if (this.wlNextTx) {
             //Whitelist this merchant
             config.pushArray("allowedMerchants", data.attributes.description);
@@ -113,7 +128,7 @@ class Up extends EventEmitter {
             if (!isWithdrawal) {
                 let description = data.attributes.description;
 
-                if (data.attributes.rawText.toLowerCase().startsWith("afterpay")) {
+                if (data.attributes.rawText?.toLowerCase().startsWith("afterpay")) {
                     description += " · via Afterpay";
                 }
 
@@ -148,7 +163,7 @@ class Up extends EventEmitter {
             fields.push(field);
         }
     
-        let embedBody = 
+        let embedBody: EmbedOptions =
         {
             "title": "Oh no!",
             "description": embedDescription,
@@ -169,42 +184,26 @@ class Up extends EventEmitter {
         this.emit("embedAvailable", data.id, embedBody);
     }
 
-    async processTxId(tx, allowedType = "default") {
+    async processTxId(tx: TransactionId, allowedType = "default") {
         //oh no Victor made a purchase!
-        var myHeaders = {
+        const myHeaders = {
             "Authorization": `Bearer ${upToken}`
         };       
     
-        var requestOptions = {
+        const requestOptions = {
             method: 'GET',
             headers: myHeaders,
             redirect: 'follow'
-        };
+        } as const;
         
         let response = await fetch(`https://api.up.com.au/api/v1/transactions/${tx}`, requestOptions);
-        let json = await response.json();
-        this.processTxData(json.data, allowedType);
+        let json = await response.json() as UpTransactionIdResponse;
+        await this.processTxData(json.data, allowedType);
     }
 
-    async executeWebhook(req, res) {
-        res.send('OK!');
-        
-        let data = req.body.data;
-        
-        let attr = data.attributes;
-        if (attr.eventType == "TRANSACTION_CREATED") {
-            this.processTxId(data.relationships.transaction.data.id);
-        } else if (attr.eventType == "TRANSACTION_SETTLED") {
-            this.processTxId(data.relationships.transaction.data.id);
-        } else if (attr.eventType == "TRANSACTION_DELETED") {
-            this.emit("clearTx", data.relationships.transaction.data.id);
-        }
-    }
-
-    whitelistNextTx(enabled) {
+    whitelistNextTx(enabled: boolean) {
         this.wlNextTx = enabled;
     }
 }
 
-let instance = new Up();
-module.exports = instance;
+export default new Up();

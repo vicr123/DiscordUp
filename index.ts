@@ -1,9 +1,9 @@
-const config = require('./config');
-const up = require('./up');
-const discord = require('./discord');
-const db = require('./db');
+import config from "./config";
+import up from "./up";
+import discord from "./discord";
+import db from "./db";
 
-async function clearTx(txId, clearType = true) {
+async function clearTx(txId: string, clearType = true) {
     //Delete everything to do with this transaction
     let channels = await db.idsForTransaction(txId);
     for (let channel of channels) {
@@ -25,13 +25,16 @@ discord.on("processTxId", async (txId, txType) => {
 });
 discord.on("changeWhitelistMode", up.whitelistNextTx.bind(up));
 up.on("embedAvailable", async (txId, embed) => {
-    let channels = await db.idsForTransaction(txId);
+    let channels = await db.idsForTransaction(txId) as {
+        channel: string,
+        message?: string
+    }[];
     if (channels.length == 0) {
         //Post a new transaction
         for (let channel of config.value("channels")) {
             channels.push({
                 channel: channel,
-                message: null
+                message: undefined
             });
         }
     }

@@ -1,17 +1,19 @@
-const fs = require('fs');
+import fs from 'fs';
 
 class Config {
     cfg;
     constructor() {
-        let configString = fs.readFileSync("./config.json");
+        let configString = fs.readFileSync("./config.json", {
+            encoding: "utf-8"
+        });
         this.cfg = JSON.parse(configString);
     }
 
-    value(key) {
+    value(key: string) {
         return this.cfg[key];
     }
 
-    pushArray(key, value) {
+    pushArray(key: string, value: any) {
         let array = this.cfg[key];
         array.push(value);
         this.cfg[key] = array;
@@ -24,5 +26,4 @@ class Config {
     }
 }
 
-let instance = new Config();
-module.exports = instance;
+export default new Config();
